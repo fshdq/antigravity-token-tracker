@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity Token Tracker & Profiler</title>
+  <link rel="stylesheet" href="{{styleUri}}">
+</head>
+<body>
+  <!-- Header -->
+  <header class="dashboard-header">
+    <div class="brand-wrapper">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v5l3 3"/>
+          <path d="M7 16a6 6 0 0 1 10 0"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>
+          Antigravity Token Profiler
+          <span class="brand-tag">v0.1.0</span>
+        </h1>
+        <p>Agent Observability, Token Breakdown & Cost Analytics</p>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <!-- Workspace Selector -->
+      <div class="control-item">
+        <span class="control-label">Workspace:</span>
+        <select id="workspaceSelect" class="select-input">
+          <option value="CURRENT">Current Workspace</option>
+          <option value="ALL">All Workspaces</option>
+        </select>
+      </div>
+
+      <!-- Model Pricing Selector -->
+      <div class="control-item">
+        <span class="control-label">Pricing:</span>
+        <select id="modelSelect" class="select-input">
+          <option value="auto">✨ Auto (Detect per Session)</option>
+          <option value="gemini-2.5-flash">Gemini 2.5 / 3.x Flash</option>
+          <option value="gemini-2.5-pro">Gemini 2.5 / 3.x Pro</option>
+          <option value="claude-3-7-sonnet">Claude 3.7 / 4.x Sonnet</option>
+          <option value="custom">Custom Rate</option>
+        </select>
+      </div>
+
+      <!-- Currency Toggle -->
+      <button id="currencyToggleBtn" class="currency-toggle-btn" title="Toggle Currency USD / IDR">
+        <span id="currencyIcon">$</span>
+        <span id="currencyLabel">USD</span>
+      </button>
+
+      <!-- Refresh Button -->
+      <button id="refreshBtn" class="action-btn" title="Refresh local transcript data">
+        <svg id="refreshIcon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+        </svg>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI Summary Cards -->
+  <section class="kpi-grid">
+    <div class="kpi-card cyan">
+      <div class="kpi-top">
+        <span class="kpi-title">Active Scope</span>
+        <span class="kpi-icon">📁</span>
+      </div>
+      <div class="kpi-value" id="kpiScopeCount">0</div>
+      <div class="kpi-sub">
+        <span id="kpiWorkspaceName" class="badge-tag">Current Workspace</span>
+        <span id="kpiTurnCount">0 turns</span>
+      </div>
+    </div>
+
+    <div class="kpi-card purple">
+      <div class="kpi-top">
+        <span class="kpi-title">Grand Total Tokens</span>
+        <span class="kpi-icon">⚡</span>
+      </div>
+      <div class="kpi-value" id="kpiTotalTokens">0</div>
+      <div class="kpi-sub">
+        <span>In: <b id="kpiInputTokens">0</b></span>
+        <span>•</span>
+        <span>Out: <b id="kpiOutputTokens">0</b></span>
+      </div>
+    </div>
+
+    <div class="kpi-card emerald">
+      <div class="kpi-top">
+        <span class="kpi-title">Estimated Cost</span>
+        <span class="kpi-icon">💰</span>
+      </div>
+      <div class="kpi-value" id="kpiCostPrimary">$0.0000</div>
+      <div class="kpi-sub">
+        <span id="kpiCostSecondary">Rp 0</span>
+        <span id="kpiPricingModelTag" class="badge-tag">Flash</span>
+      </div>
+    </div>
+
+    <div class="kpi-card amber">
+      <div class="kpi-top">
+        <span class="kpi-title">Tool Context Ratio</span>
+        <span class="kpi-icon">🛠️</span>
+      </div>
+      <div class="kpi-value" id="kpiToolRatio">0%</div>
+      <div class="kpi-sub">
+        <span>Tool output percentage of input tokens</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Granular Token Breakdown -->
+  <section class="breakdown-section">
+    <div class="section-title-row">
+      <div class="section-title">
+        <span>📊 Token Anatomy & Teardown</span>
+      </div>
+    </div>
+
+    <div class="breakdown-columns">
+      <!-- Input Tokens Breakdown -->
+      <div class="breakdown-col">
+        <div class="breakdown-col-header">
+          <span class="col-name">Input Context (Ingested by Model)</span>
+          <span class="col-total" id="inputColTotal">0</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="barToolOut" class="bar-segment bar-tool-out" style="width: 0%" title="Tool Outputs"></div>
+          <div id="barSystemHist" class="bar-segment bar-system-hist" style="width: 0%" title="System & History"></div>
+          <div id="barUserPrompt" class="bar-segment bar-user-prompt" style="width: 0%" title="User Prompts"></div>
+        </div>
+        <div class="legend-list">
+          <div class="legend-item">
+            <div class="legend-dot-label">
+              <span class="dot bar-tool-out"></span>
+              <span>Tool Outputs (terminal, file views, greps)</span>
+            </div>
+            <div class="legend-stats">
+              <span id="legToolOutVal">0</span>
+              <span id="legToolOutPct" class="legend-pct">(0%)</span>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot-label">
+              <span class="dot bar-system-hist"></span>
+              <span>System Rules & Session History</span>
+            </div>
+            <div class="legend-stats">
+              <span id="legSystemHistVal">0</span>
+              <span id="legSystemHistPct" class="legend-pct">(0%)</span>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot-label">
+              <span class="dot bar-user-prompt"></span>
+              <span>User Requests & Direct Prompts</span>
+            </div>
+            <div class="legend-stats">
+              <span id="legUserPromptVal">0</span>
+              <span id="legUserPromptPct" class="legend-pct">(0%)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output Tokens Breakdown -->
+      <div class="breakdown-col">
+        <div class="breakdown-col-header">
+          <span class="col-name">Output Generation (Produced by Model)</span>
+          <span class="col-total" id="outputColTotal">0</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="barToolCall" class="bar-segment bar-tool-call" style="width: 0%" title="Tool Calls"></div>
+          <div id="barThinking" class="bar-segment bar-thinking" style="width: 0%" title="Thinking / CoT"></div>
+          <div id="barAssistant" class="bar-segment bar-assistant" style="width: 0%" title="Assistant Responses"></div>
+        </div>
+        <div class="legend-list">
+          <div class="legend-item">
+            <div class="legend-dot-label">
+              <span class="dot bar-tool-call"></span>
+              <span>Tool Calls (code patches, command payloads)</span>
+            </div>
+            <div class="legend-stats">
+              <span id="legToolCallVal">0</span>
+              <span id="legToolCallPct" class="legend-pct">(0%)</span>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot-label">
+              <span class="dot bar-thinking"></span>
+              <span>Model Thinking (Chain-of-Thought)</span>
+            </div>
+            <div class="legend-stats">
+              <span id="legThinkingVal">0</span>
+              <span id="legThinkingPct" class="legend-pct">(0%)</span>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot-label">
+              <span class="dot bar-assistant"></span>
+              <span>Assistant Responses (Markdown displayed)</span>
+            </div>
+            <div class="legend-stats">
+              <span id="legAssistantVal">0</span>
+              <span id="legAssistantPct" class="legend-pct">(0%)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sessions List -->
+  <section class="sessions-section">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="text-input" placeholder="Search sessions by prompt or topic...">
+      </div>
+      <div class="control-item">
+        <span class="control-label">Sort By:</span>
+        <select id="sortSelect" class="select-input">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="tokens_desc">Highest Tokens</option>
+          <option value="cost_desc">Highest Cost</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="sessions-table">
+        <thead>
+          <tr>
+            <th>Session / Topic</th>
+            <th>Date</th>
+            <th>Turns</th>
+            <th>Input Tokens</th>
+            <th>Output Tokens</th>
+            <th>Total Tokens</th>
+            <th>Est. Cost</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="sessionsTableBody">
+          <!-- Populated by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <p>No conversations found for the selected workspace or filter.</p>
+    </div>
+  </section>
+
+  <!-- Detail Drill-down Drawer -->
+  <div id="detailDrawerOverlay" class="modal-overlay">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <h2 id="drawerSessionTitle">Session Details</h2>
+          <span id="drawerSessionSubtitle" class="pill">ID</span>
+        </div>
+        <button id="drawerCloseBtn" class="drawer-close-btn">&times;</button>
+      </div>
+      <div class="drawer-body">
+        <div class="drawer-pills">
+          <span class="pill" id="drawerModelPill">🤖 Model</span>
+          <span class="pill" id="drawerWorkspacePill">📁 Workspace</span>
+          <span class="pill" id="drawerDatePill">📅 Date</span>
+          <span class="pill" id="drawerTokensPill">⚡ 0 Tokens</span>
+          <span class="pill" id="drawerCostPill">💰 Cost</span>
+        </div>
+
+        <h3 style="font-size: 13px; margin: 16px 0 8px; color: #ffffff;">Turn-by-Turn Timeline</h3>
+        <div id="drawerTimeline" class="timeline">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{scriptUri}}"></script>
+</body>
+</html>

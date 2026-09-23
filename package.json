@@ -1,0 +1,119 @@
+{
+  "name": "antigravity-token-tracker",
+  "displayName": "Antigravity Token Tracker & Profiler",
+  "description": "Monitor and teardown input/output tokens, track chat history by workspace, and estimate model costs for Google Antigravity IDE",
+  "version": "0.1.0",
+  "publisher": "antigravity-community",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Machine Learning"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "antigravity-token-tracker-container",
+          "title": "Antigravity Token Tracker",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "antigravity-token-tracker-container": [
+        {
+          "type": "webview",
+          "id": "antigravityTokenTracker.sidebarView",
+          "name": "Token Profiler"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "antigravityTokenTracker.openDashboard",
+        "title": "Open Token Profiler Dashboard",
+        "category": "Antigravity"
+      },
+      {
+        "command": "antigravityTokenTracker.refresh",
+        "title": "Refresh Token Data",
+        "category": "Antigravity",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "antigravityTokenTracker.openDashboard",
+          "when": "view == antigravityTokenTracker.sidebarView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "antigravityTokenTracker.refresh",
+          "when": "view == antigravityTokenTracker.sidebarView",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Antigravity Token Tracker",
+      "properties": {
+        "antigravityTokenTracker.defaultModel": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "claude-3-7-sonnet",
+            "custom"
+          ],
+          "enumDescriptions": [
+            "Auto (Detect model per session automatically)",
+            "Gemini 2.5 / 3.x Flash ($0.075 / 1M in, $0.30 / 1M out)",
+            "Gemini 2.5 / 3.x Pro ($1.25 / 1M in, $5.00 / 1M out)",
+            "Claude 3.7 / 4.x Sonnet ($3.00 / 1M in, $15.00 / 1M out)",
+            "Custom Pricing Rate"
+          ],
+          "description": "Default model used for cost estimation"
+        },
+        "antigravityTokenTracker.currency": {
+          "type": "string",
+          "default": "USD",
+          "enum": [
+            "USD",
+            "IDR"
+          ],
+          "description": "Display currency for estimated costs"
+        },
+        "antigravityTokenTracker.idrExchangeRate": {
+          "type": "number",
+          "default": 16000,
+          "description": "Exchange rate from USD to IDR"
+        },
+        "antigravityTokenTracker.charsPerToken": {
+          "type": "number",
+          "default": 3.85,
+          "description": "Average characters per token for estimation"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "compile": "tsc -p ./ --noEmit",
+    "watch": "node esbuild.js --watch",
+    "build": "node esbuild.js --production",
+    "test": "node --loader ts-node/esm tests/scanner.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.20.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
