@@ -4,6 +4,25 @@
   "description": "Monitor and teardown input/output tokens, track chat history by workspace, and estimate model costs for Google Antigravity IDE",
   "version": "0.1.0",
   "publisher": "antigravity-community",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fshdq/antigravity-token-tracker.git"
+  },
+  "homepage": "https://github.com/fshdq/antigravity-token-tracker#readme",
+  "bugs": {
+    "url": "https://github.com/fshdq/antigravity-token-tracker/issues"
+  },
+  "keywords": [
+    "antigravity",
+    "tokens",
+    "token-profiler",
+    "token-tracker",
+    "gemini",
+    "claude",
+    "llm-observability",
+    "cost-estimator"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
